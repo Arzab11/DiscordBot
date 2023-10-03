@@ -52,7 +52,7 @@ client.on('messageCreate', (message) => {
     else if (command === 'w' || command === 'weather') {
         axios
             .get(
-                `http://api.openweathermap.org/data/2.5/weather?q=${args.join(' ')}&appid=${process.env.apitoken}`
+                `http://api.openweathermap.org/data/2.5/weather?q=${args.join(',')}&units=metric&appid=${process.env.apitoken}`
             )
             .then(response => {
                 let apiData = response.data;
