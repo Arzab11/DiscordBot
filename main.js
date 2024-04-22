@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, IntentsBitField, MessageEmbed } = require('discord.js');
 require('dotenv').config();
 const axios = require('axios')
+const countryjs = require('countryjs');
 
 const prefix = '!';
 
@@ -24,11 +25,11 @@ const exampleEmbed = (
     wind,
     cloudiness,
     icon,
-    country
+    countryName
 ) => {
     const embed = {
         color: 0x0099ff,
-        title: `Weather in ${country}`,
+        title: `Weather in ${countryName}`,
         fields: [
             { name: 'Temperature', value: `${temp}°C`, inline: true },
             { name: 'Pressure', value: `${pressure} hPa`, inline: true },
@@ -44,44 +45,37 @@ const exampleEmbed = (
 
 client.on('messageCreate', (message) => {
     if (!message.content.startsWith(prefix) || message.author.bot) return;
-    const args = message.content.slice(prefix.length).split(' ');
+    const args = message.content.slice(prefix.length).split(/ +/); // Split by one or more spaces
     const command = args.shift().toLowerCase();
     if (message.content === prefix + 'hello') {
-        message.reply('hey')
-    }
-    else if (command === 'w' || command === 'weather') {
+        message.reply('hey');
+    } else if (command === 'w' || command === 'weather') {
+        const city = args.join(' '); // Join the arguments back together with spaces
         axios
             .get(
-                `http://api.openweathermap.org/data/2.5/weather?q=${args.join(',')}&units=metric&appid=${process.env.apitoken}`
+                `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${process.env.apitoken}`
             )
             .then(response => {
                 let apiData = response.data;
-                let currentTemp = Math.ceil(apiData.data.main.temp)
-                let humidity = apiData.data.main.humidity;
-                let wind = apiData.data.wind.speed;
-                let icon = apiData.data.weather[0].icon
-                let country = apiData.data.sys.country
-                let pressure = apiData.data.main.pressure;
-                let cloudness = apiData.data.weather[0].description;
-                message.channel.send(exampleEmbed(currentTemp, pressure, humidity, wind, cloudness, icon, country));
-             })
+                let countryCode = apiData.sys.country;
+                let countryName = countryjs.name(countryCode);
+                let currentTemp = Math.ceil(apiData.main.temp);
+                let humidity = apiData.main.humidity;
+                let wind = apiData.wind.speed;
+                let icon = apiData.weather[0].icon;
+                // let country = apiData.sys.country;
+                let pressure = apiData.main.pressure;
+                let cloudiness = apiData.weather[0].description;
+                message.channel.send(exampleEmbed(currentTemp, pressure, humidity, wind, cloudiness, icon, countryName));
+            })
             .catch(err => {
                 message.reply(`Enter a valid city name`);
                 console.error(err); 
-            })
+            });
     }
-})
+});
 
-// client.on('interactionCreate', (interaction) => {
-//     if (!interaction.isChatInputCommand()) return;
 
-//     if (interaction.commandName === 'hey') {
-//         interaction.reply('hey!');
-//     }
-//     if (interaction.commandName === 'test') {
-//         interaction.reply('testing');
-//     }
-// });
 
 client.login(process.env.token)
 
